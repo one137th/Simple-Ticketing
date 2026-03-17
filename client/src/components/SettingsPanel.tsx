@@ -23,9 +23,9 @@ import { CLOUDFLARE_WORKER_TEMPLATE } from "@/lib/remoteSync";
 
 type Tab = "file" | "sync" | "projects" | "agent";
 
-interface Props { onClose: () => void; }
+interface Props { onClose: () => void; initialTab?: Tab; }
 
-export default function SettingsPanel({ onClose }: Props) {
+export default function SettingsPanel({ onClose, initialTab }: Props) {
   const {
     data, fileName, fileMode,
     handleOpenFile, handleCreateFile,
@@ -34,7 +34,7 @@ export default function SettingsPanel({ onClose }: Props) {
     isSyncing, lastSyncResult,
   } = useApp();
 
-  const [tab, setTab] = useState<Tab>("file");
+  const [tab, setTab] = useState<Tab>(initialTab ?? "file");
   const [editingProject, setEditingProject] = useState<string | null>(null);
   const [editName, setEditName] = useState("");
   const [editDesc, setEditDesc] = useState("");

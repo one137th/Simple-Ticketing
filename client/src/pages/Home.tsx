@@ -19,6 +19,12 @@ export default function Home() {
   const [statusFilter, setStatusFilter] = useState<TicketStatus | null>(null);
   const [selectedTicketId, setSelectedTicketId] = useState<string | null>(null);
   const [showSettings, setShowSettings] = useState(false);
+  const [settingsInitialTab, setSettingsInitialTab] = useState<"file" | "sync" | "projects" | "agent">("file");
+
+  const openSettings = (tab: "file" | "sync" | "projects" | "agent" = "file") => {
+    setSettingsInitialTab(tab);
+    setShowSettings(true);
+  };
 
   if (!isLoaded) {
     return <WelcomeScreen />;
@@ -40,7 +46,8 @@ export default function Home() {
         onViewChange={(v) => { setView(v); setSelectedTicketId(null); }}
         statusFilter={statusFilter}
         onStatusFilter={handleStatusFilter}
-        onOpenSettings={() => setShowSettings(true)}
+        onOpenSettings={() => openSettings("file")}
+        onOpenAgentSetup={() => openSettings("agent")}
       />
 
       <div className="flex flex-1 overflow-hidden">
@@ -66,7 +73,7 @@ export default function Home() {
       </div>
 
       {showSettings && (
-        <SettingsPanel onClose={() => setShowSettings(false)} />
+        <SettingsPanel onClose={() => setShowSettings(false)} initialTab={settingsInitialTab} />
       )}
     </div>
   );
