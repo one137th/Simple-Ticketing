@@ -49,7 +49,8 @@ function vitePluginManusDebugCollector(): Plugin {
   return {
     name: "manus-debug-collector",
     transformIndexHtml(html) {
-      if (process.env.NODE_ENV === "production") return html;
+      // Only inject debug collector in development — never in production builds
+      if (process.env.NODE_ENV !== "development") return html;
       return {
         html,
         tags: [{ tag: "script", attrs: { src: "/__manus__/debug-collector.js", defer: true }, injectTo: "head" }],
