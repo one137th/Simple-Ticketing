@@ -39,6 +39,7 @@ interface AppContextValue {
   // Ticket CRUD
   addTicket: (t: Partial<Ticket> & { title: string; projectKey: string }) => Promise<Ticket>;
   updateTicket: (id: string, changes: Partial<Ticket>) => Promise<void>;
+  bulkUpdateTickets: (ids: string[], changes: Partial<Ticket>) => Promise<void>;
   deleteTicket: (id: string) => Promise<void>;
   addCommentToTicket: (ticketId: string, author: string, body: string) => Promise<void>;
   deleteComment: (ticketId: string, commentId: string) => Promise<void>;
@@ -184,6 +185,19 @@ export function AppProvider({ children }: { children: React.ReactNode }) {
     await persist(newData);
   }, [data, persist]);
 
+  const bulkUpdateTickets = useCallback(async (ids: string[], changes: Partial<Ticket>) => {
+    if (!data) return;
+    const now = new Date().toISOString();
+    const newData = {
+      ...data,
+      tickets: data.tickets.map((t) =>
+        ids.includes(t.id) ? { ...t, ...changes, updatedAt: now } : t
+      ),
+    };
+    await persist(newData);
+    toast.success(`Updated ${ids.length} ticket${ids.length !== 1 ? "s" : ""}`);
+  }, [data, persist]);
+
   const deleteTicket = useCallback(async (id: string) => {
     if (!data) return;
     const newData = { ...data, tickets: data.tickets.filter((t) => t.id !== id) };
@@ -228,6 +242,7 @@ export function AppProvider({ children }: { children: React.ReactNode }) {
     deleteProject,
     addTicket,
     updateTicket,
+    bulkUpdateTickets,
     deleteTicket,
     addCommentToTicket,
     deleteComment,

@@ -1,6 +1,6 @@
 /**
  * TicketRow — Single row in the ticket list
- * Design: Blueprint — dense table row, priority strip, status badge
+ * Design: Blueprint — dense table row, priority strip, status badge, checkbox
  */
 
 import { cn } from "@/lib/utils";
@@ -12,6 +12,8 @@ import { MessageSquare } from "lucide-react";
 interface Props {
   ticket: Ticket;
   isSelected: boolean;
+  isChecked: boolean;
+  onCheck: (e: React.MouseEvent) => void;
   onClick: () => void;
 }
 
@@ -22,7 +24,7 @@ const PRIORITY_STRIP: Record<string, string> = {
   low:      "border-l-blue-300",
 };
 
-export default function TicketRow({ ticket, isSelected, onClick }: Props) {
+export default function TicketRow({ ticket, isSelected, isChecked, onCheck, onClick }: Props) {
   const status = STATUS_CONFIG[ticket.status];
   const priority = PRIORITY_CONFIG[ticket.priority];
   const type = TYPE_CONFIG[ticket.type];
@@ -33,11 +35,31 @@ export default function TicketRow({ ticket, isSelected, onClick }: Props) {
       className={cn(
         "ticket-row border-l-[3px] cursor-pointer select-none",
         PRIORITY_STRIP[ticket.priority],
-        isSelected ? "bg-primary/5 border-l-primary" : ""
+        isChecked ? "bg-primary/8" : isSelected ? "bg-primary/5" : "",
+        isChecked ? "border-l-primary" : ""
       )}
     >
+      {/* Checkbox */}
+      <td className="pl-3 pr-1 py-2.5 w-8">
+        <div
+          onClick={onCheck}
+          className={cn(
+            "w-4 h-4 rounded border flex items-center justify-center flex-shrink-0 transition-colors",
+            isChecked
+              ? "bg-primary border-primary"
+              : "border-border hover:border-primary/60 bg-card"
+          )}
+        >
+          {isChecked && (
+            <svg className="w-2.5 h-2.5 text-primary-foreground" fill="none" viewBox="0 0 12 12">
+              <path d="M2 6l3 3 5-5" stroke="currentColor" strokeWidth="1.5" strokeLinecap="round" strokeLinejoin="round" />
+            </svg>
+          )}
+        </div>
+      </td>
+
       {/* Ticket ID */}
-      <td className="pl-4 pr-2 py-2.5 w-28">
+      <td className="pl-2 pr-2 py-2.5 w-28">
         <span className="font-mono text-xs font-medium text-muted-foreground whitespace-nowrap">
           {ticket.id}
         </span>
