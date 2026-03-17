@@ -35,7 +35,6 @@ export default function Home() {
 
   return (
     <div className="flex h-screen overflow-hidden bg-background">
-      {/* Sidebar */}
       <Sidebar
         view={view}
         onViewChange={(v) => { setView(v); setSelectedTicketId(null); }}
@@ -44,7 +43,6 @@ export default function Home() {
         onOpenSettings={() => setShowSettings(true)}
       />
 
-      {/* Main content */}
       <div className="flex flex-1 overflow-hidden">
         {view === "list" ? (
           <TicketList
@@ -59,7 +57,6 @@ export default function Home() {
           />
         )}
 
-        {/* Ticket detail slide-over */}
         {selectedTicketId && (
           <TicketDetail
             ticketId={selectedTicketId}
@@ -68,7 +65,6 @@ export default function Home() {
         )}
       </div>
 
-      {/* Settings panel */}
       {showSettings && (
         <SettingsPanel onClose={() => setShowSettings(false)} />
       )}

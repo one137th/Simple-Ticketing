@@ -4,11 +4,10 @@
  */
 
 import { useState } from "react";
-import { Plus, Ticket, LayoutGrid, List, ChevronDown, ChevronRight, FolderOpen, Settings, Save } from "lucide-react";
+import { Plus, Ticket, LayoutGrid, List, ChevronDown, ChevronRight, FolderOpen, Settings, Save, Bot } from "lucide-react";
 import { useApp } from "@/contexts/AppContext";
 import { STATUS_CONFIG } from "@/lib/types";
 import type { TicketStatus } from "@/lib/types";
-import { Button } from "@/components/ui/button";
 import { cn } from "@/lib/utils";
 import NewProjectDialog from "./NewProjectDialog";
 
@@ -18,9 +17,10 @@ interface SidebarProps {
   statusFilter: TicketStatus | null;
   onStatusFilter: (s: TicketStatus | null) => void;
   onOpenSettings: () => void;
+  onOpenAgentSetup?: () => void;
 }
 
-export default function Sidebar({ view, onViewChange, statusFilter, onStatusFilter, onOpenSettings }: SidebarProps) {
+export default function Sidebar({ view, onViewChange, statusFilter, onStatusFilter, onOpenSettings, onOpenAgentSetup = () => {} }: SidebarProps) {
   const { data, selectedProjectKey, setSelectedProjectKey, isSaving, fileName, fileMode } = useApp();
   const [projectsOpen, setProjectsOpen] = useState(true);
   const [statusOpen, setStatusOpen] = useState(true);
@@ -28,8 +28,6 @@ export default function Sidebar({ view, onViewChange, statusFilter, onStatusFilt
 
   const projects = data?.projects ?? [];
   const tickets = data?.tickets ?? [];
-
-  const selectedProject = projects.find((p) => p.key === selectedProjectKey);
 
   const statusCounts = Object.keys(STATUS_CONFIG).reduce((acc, s) => {
     const status = s as TicketStatus;
@@ -202,7 +200,14 @@ export default function Sidebar({ view, onViewChange, statusFilter, onStatusFilt
         </div>
 
         {/* Footer */}
-        <div className="border-t border-sidebar-border px-3 py-3">
+        <div className="border-t border-sidebar-border px-3 py-3 space-y-0.5">
+          <button
+            onClick={onOpenAgentSetup}
+            className="w-full flex items-center gap-2 px-2 py-1.5 rounded-md text-xs text-purple-600 hover:bg-purple-50 hover:text-purple-700 transition-colors font-medium"
+          >
+            <Bot className="w-3.5 h-3.5" />
+            AI Agent Setup
+          </button>
           <button
             onClick={onOpenSettings}
             className="w-full flex items-center gap-2 px-2 py-1.5 rounded-md text-xs text-muted-foreground hover:bg-sidebar-accent hover:text-foreground transition-colors"

@@ -4,7 +4,9 @@
  */
 
 import React, { createContext, useContext, useState, useCallback, useEffect } from "react";
-import type { AppData, Ticket, Project, Comment } from "@/lib/types";
+import type { AppData, Ticket, Project } from "@/lib/types";
+import type { SyncConfig } from "@/lib/remoteSync";
+import { loadSyncConfig, saveSyncConfig, syncPush, syncPull } from "@/lib/remoteSync";
 import {
   openFile,
   createNewFile,
@@ -47,6 +49,14 @@ interface AppContextValue {
   // Filters
   selectedProjectKey: string | null;
   setSelectedProjectKey: (key: string | null) => void;
+
+  // Remote sync
+  syncConfig: SyncConfig;
+  updateSyncConfig: (cfg: SyncConfig) => void;
+  pushToRemote: () => Promise<void>;
+  pullFromRemote: () => Promise<void>;
+  isSyncing: boolean;
+  lastSyncResult: string | null;
 }
 
 const AppContext = createContext<AppContextValue | null>(null);
@@ -58,8 +68,11 @@ export function AppProvider({ children }: { children: React.ReactNode }) {
   const [fileMode, setFileMode] = useState<"file" | "localStorage" | null>(null);
   const [fileName, setFileName] = useState<string | null>(null);
   const [selectedProjectKey, setSelectedProjectKey] = useState<string | null>(null);
+  const [syncConfig, setSyncConfig] = useState<SyncConfig>(() => loadSyncConfig());
+  const [isSyncing, setIsSyncing] = useState(false);
+  const [lastSyncResult, setLastSyncResult] = useState<string | null>(null);
 
-  // Persist & save helper
+  // Persist & save helper (also auto-pushes to remote if configured)
   const persist = useCallback(async (newData: AppData) => {
     setData(newData);
     setIsSaving(true);
@@ -68,6 +81,22 @@ export function AppProvider({ children }: { children: React.ReactNode }) {
         await saveData(newData);
       } else {
         saveToLocalStorage(newData);
+      }
+      // Auto-push to remote backend if configured
+      const cfg = loadSyncConfig();
+      if (cfg.backend !== "none") {
+        const result = await syncPush(cfg, newData);
+        if (result.ok) {
+          // If a new gist was created, save the returned gistId
+          if (result.gistId && cfg.backend === "github_gist") {
+            const updated = { ...cfg, gistId: result.gistId };
+            saveSyncConfig(updated);
+            setSyncConfig(updated);
+          }
+          setLastSyncResult(`Synced ✓ ${new Date().toLocaleTimeString()}`);
+        } else {
+          setLastSyncResult(`Sync failed: ${result.message}`);
+        }
       }
     } catch (err: any) {
       toast.error("Save failed: " + (err?.message ?? "Unknown error"));
@@ -228,6 +257,54 @@ export function AppProvider({ children }: { children: React.ReactNode }) {
     }
   }, [data?.projects.length]);
 
+  const updateSyncConfig = useCallback((cfg: SyncConfig) => {
+    saveSyncConfig(cfg);
+    setSyncConfig(cfg);
+    toast.success("Sync settings saved");
+  }, []);
+
+  const pushToRemote = useCallback(async () => {
+    if (!data) return;
+    setIsSyncing(true);
+    try {
+      const result = await syncPush(syncConfig, data);
+      if (result.ok) {
+        if (result.gistId && syncConfig.backend === "github_gist") {
+          const updated = { ...syncConfig, gistId: result.gistId };
+          saveSyncConfig(updated);
+          setSyncConfig(updated);
+        }
+        setLastSyncResult(`Pushed ✓ ${new Date().toLocaleTimeString()}`);
+        toast.success("Pushed to remote");
+      } else {
+        setLastSyncResult(`Push failed: ${result.message}`);
+        toast.error(result.message);
+      }
+    } finally {
+      setIsSyncing(false);
+    }
+  }, [data, syncConfig]);
+
+  const pullFromRemote = useCallback(async () => {
+    setIsSyncing(true);
+    try {
+      const result = await syncPull(syncConfig);
+      if (result.ok && result.data) {
+        setData(result.data);
+        if (hasFileHandle()) await saveData(result.data);
+        else saveToLocalStorage(result.data);
+        if (result.data.projects.length > 0) setSelectedProjectKey(result.data.projects[0].key);
+        setLastSyncResult(`Pulled ✓ ${new Date().toLocaleTimeString()}`);
+        toast.success("Pulled from remote");
+      } else {
+        setLastSyncResult(`Pull failed: ${result.message}`);
+        toast.error(result.message);
+      }
+    } finally {
+      setIsSyncing(false);
+    }
+  }, [syncConfig]);
+
   const value: AppContextValue = {
     data,
     isLoaded,
@@ -248,6 +325,12 @@ export function AppProvider({ children }: { children: React.ReactNode }) {
     deleteComment,
     selectedProjectKey,
     setSelectedProjectKey,
+    syncConfig,
+    updateSyncConfig,
+    pushToRemote,
+    pullFromRemote,
+    isSyncing,
+    lastSyncResult,
   };
 
   return <AppContext.Provider value={value}>{children}</AppContext.Provider>;
