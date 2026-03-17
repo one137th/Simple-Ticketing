@@ -1,25 +1,77 @@
-import { Button } from "@/components/ui/button";
-import { Loader2 } from "lucide-react";
-import { Streamdown } from 'streamdown';
-
 /**
- * All content in this page are only for example, replace with your own feature implementation
- * When building pages, remember your instructions in Frontend Best Practices, Design Guide and Common Pitfalls
+ * Home — Main application shell
+ * Design: Blueprint — sidebar + main content + optional slide-over
  */
+
+import { useState } from "react";
+import { useApp } from "@/contexts/AppContext";
+import WelcomeScreen from "@/components/WelcomeScreen";
+import Sidebar from "@/components/Sidebar";
+import TicketList from "@/components/TicketList";
+import KanbanBoard from "@/components/KanbanBoard";
+import TicketDetail from "@/components/TicketDetail";
+import SettingsPanel from "@/components/SettingsPanel";
+import type { TicketStatus } from "@/lib/types";
+
 export default function Home() {
-  // If theme is switchable in App.tsx, we can implement theme toggling like this:
-  // const { theme, toggleTheme } = useTheme();
+  const { isLoaded } = useApp();
+  const [view, setView] = useState<"list" | "board">("list");
+  const [statusFilter, setStatusFilter] = useState<TicketStatus | null>(null);
+  const [selectedTicketId, setSelectedTicketId] = useState<string | null>(null);
+  const [showSettings, setShowSettings] = useState(false);
+
+  if (!isLoaded) {
+    return <WelcomeScreen />;
+  }
+
+  const handleSelectTicket = (id: string) => {
+    setSelectedTicketId((prev) => (prev === id ? null : id));
+  };
+
+  const handleStatusFilter = (s: TicketStatus | null) => {
+    setStatusFilter(s);
+    setSelectedTicketId(null);
+  };
 
   return (
-    <div className="min-h-screen flex flex-col">
-      <main>
-        {/* Example: lucide-react for icons */}
-        <Loader2 className="animate-spin" />
-        Example Page
-        {/* Example: Streamdown for markdown rendering */}
-        <Streamdown>Any **markdown** content</Streamdown>
-        <Button variant="default">Example Button</Button>
-      </main>
+    <div className="flex h-screen overflow-hidden bg-background">
+      {/* Sidebar */}
+      <Sidebar
+        view={view}
+        onViewChange={(v) => { setView(v); setSelectedTicketId(null); }}
+        statusFilter={statusFilter}
+        onStatusFilter={handleStatusFilter}
+        onOpenSettings={() => setShowSettings(true)}
+      />
+
+      {/* Main content */}
+      <div className="flex flex-1 overflow-hidden">
+        {view === "list" ? (
+          <TicketList
+            statusFilter={statusFilter}
+            onSelectTicket={handleSelectTicket}
+            selectedTicketId={selectedTicketId}
+          />
+        ) : (
+          <KanbanBoard
+            onSelectTicket={handleSelectTicket}
+            selectedTicketId={selectedTicketId}
+          />
+        )}
+
+        {/* Ticket detail slide-over */}
+        {selectedTicketId && (
+          <TicketDetail
+            ticketId={selectedTicketId}
+            onClose={() => setSelectedTicketId(null)}
+          />
+        )}
+      </div>
+
+      {/* Settings panel */}
+      {showSettings && (
+        <SettingsPanel onClose={() => setShowSettings(false)} />
+      )}
     </div>
   );
 }
