@@ -3,6 +3,7 @@ import react from "@vitejs/plugin-react";
 import fs from "node:fs";
 import path from "node:path";
 import { defineConfig, type Plugin, type ViteDevServer } from "vite";
+import { viteSingleFile } from "vite-plugin-singlefile";
 
 // =============================================================================
 // Manus Debug Collector - Vite Plugin
@@ -86,7 +87,7 @@ function vitePluginManusDebugCollector(): Plugin {
 }
 
 export default defineConfig({
-  plugins: [react(), tailwindcss(), vitePluginManusDebugCollector()],
+  plugins: [react(), tailwindcss(), viteSingleFile(), vitePluginManusDebugCollector()],
   resolve: {
     alias: {
       "@": path.resolve(import.meta.dirname, "client", "src"),
@@ -98,6 +99,15 @@ export default defineConfig({
   build: {
     outDir: path.resolve(import.meta.dirname, "dist"),
     emptyOutDir: true,
+    // Required for single-file inlining
+    assetsInlineLimit: 100_000_000,
+    chunkSizeWarningLimit: 100_000_000,
+    cssCodeSplit: false,
+    rollupOptions: {
+      output: {
+        inlineDynamicImports: true,
+      },
+    },
   },
   server: {
     host: true,
