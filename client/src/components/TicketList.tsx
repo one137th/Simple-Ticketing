@@ -79,6 +79,12 @@ export default function TicketList({ statusFilter, onSelectTicket, selectedTicke
       list = list.filter((t) => filters.assignees.includes(t.assignee));
     }
 
+    // FilterBar: overdue preset
+    if (filters.overdue) {
+      const now = Date.now();
+      list = list.filter((t) => t.dueAt && new Date(t.dueAt).getTime() < now);
+    }
+
     // FilterBar: keyword search
     if (filters.query.trim()) {
       const q = filters.query.toLowerCase();

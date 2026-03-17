@@ -10,3 +10,8 @@
 - [x] One-click preset chips to restore a saved filter combination
 - [x] Delete individual presets
 - [x] Built-in presets: My Open Tickets, Bugs, High Priority
+
+- [x] Add optional dueAt field to Ticket type
+- [x] Date picker in TicketDetail panel to set/clear due date
+- [x] Overdue red badge and due-soon amber badge in TicketRow list view
+- [x] Overdue built-in preset in PresetBar

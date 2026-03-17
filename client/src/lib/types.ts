@@ -28,6 +28,7 @@ export interface Ticket {
   updatedAt: string;
   comments: Comment[];
   projectKey: string;
+  dueAt?: string | null;  // ISO date string, optional
 }
 
 export interface Project {

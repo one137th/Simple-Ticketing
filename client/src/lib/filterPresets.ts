@@ -51,6 +51,20 @@ export function deletePreset(projectKey: string, id: string): FilterPreset[] {
 export function getBuiltInPresets(assignees: string[]): FilterPreset[] {
   const presets: FilterPreset[] = [
     {
+      id: "__overdue__",
+      name: "Overdue",
+      builtIn: true,
+      createdAt: "",
+      filters: {
+        query: "",
+        statuses: ["backlog", "todo", "in_progress", "in_review"],
+        priorities: [],
+        types: [],
+        assignees: [],
+        overdue: true,
+      },
+    },
+    {
       id: "__bugs__",
       name: "Bugs",
       builtIn: true,

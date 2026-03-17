@@ -4,7 +4,7 @@
  */
 
 import { useState, useEffect } from "react";
-import { X, Trash2, Send, Edit2, Check } from "lucide-react";
+import { X, Trash2, Send, Edit2, Check, Calendar, XCircle } from "lucide-react";
 import { useApp } from "@/contexts/AppContext";
 import type { TicketStatus, TicketPriority, TicketType } from "@/lib/types";
 import { STATUS_CONFIG, PRIORITY_CONFIG, TYPE_CONFIG } from "@/lib/types";
@@ -212,6 +212,13 @@ export default function TicketDetail({ ticketId, onClose }: Props) {
               {formatDistanceToNow(ticket.updatedAt)}
             </span>
           </MetaField>
+
+          <MetaField label="Due Date">
+            <DueDatePicker
+              value={ticket.dueAt ?? null}
+              onSave={(v) => updateTicket(ticket.id, { dueAt: v })}
+            />
+          </MetaField>
         </div>
 
         {/* Labels */}
@@ -391,5 +398,91 @@ function InlineEdit({
     >
       {value || <span className="text-muted-foreground/50 italic">{placeholder}</span>}
     </button>
+  );
+}
+
+function DueDatePicker({
+  value,
+  onSave,
+}: {
+  value: string | null;
+  onSave: (v: string | null) => void;
+}) {
+  const [editing, setEditing] = useState(false);
+
+  // Convert ISO string to YYYY-MM-DD for <input type="date">
+  const toInputValue = (iso: string | null) => {
+    if (!iso) return "";
+    return iso.slice(0, 10);
+  };
+
+  const fromInputValue = (v: string) => {
+    if (!v) return null;
+    return new Date(v + "T00:00:00").toISOString();
+  };
+
+  const isOverdue = value && new Date(value) < new Date() && !value.startsWith("9999");
+  const isDueSoon = value && !isOverdue && (() => {
+    const diff = new Date(value).getTime() - Date.now();
+    return diff > 0 && diff < 3 * 24 * 60 * 60 * 1000; // within 3 days
+  })();
+
+  const formatDue = (iso: string) => {
+    const d = new Date(iso);
+    return d.toLocaleDateString(undefined, { month: "short", day: "numeric", year: "numeric" });
+  };
+
+  if (editing) {
+    return (
+      <div className="flex items-center gap-1">
+        <input
+          type="date"
+          defaultValue={toInputValue(value)}
+          autoFocus
+          onChange={(e) => {
+            onSave(fromInputValue(e.target.value));
+            setEditing(false);
+          }}
+          onBlur={() => setEditing(false)}
+          className="h-6 text-xs px-1 border border-border rounded bg-card focus:outline-none focus:ring-1 focus:ring-primary/40"
+        />
+      </div>
+    );
+  }
+
+  if (!value) {
+    return (
+      <button
+        onClick={() => setEditing(true)}
+        className="flex items-center gap-1 text-xs text-muted-foreground/50 italic hover:text-primary transition-colors"
+      >
+        <Calendar className="w-3 h-3" />
+        Set due date
+      </button>
+    );
+  }
+
+  return (
+    <div className="flex items-center gap-1.5">
+      <button
+        onClick={() => setEditing(true)}
+        className={cn(
+          "flex items-center gap-1 text-xs font-medium transition-colors",
+          isOverdue ? "text-red-600 hover:text-red-700" : isDueSoon ? "text-amber-600 hover:text-amber-700" : "text-foreground/80 hover:text-foreground"
+        )}
+      >
+        <Calendar className="w-3 h-3" />
+        {formatDue(value)}
+        {isOverdue && <span className="ml-1 px-1.5 py-0.5 rounded-full bg-red-100 text-red-700 text-[10px] font-bold">Overdue</span>}
+        {isDueSoon && !isOverdue && <span className="ml-1 px-1.5 py-0.5 rounded-full bg-amber-100 text-amber-700 text-[10px] font-bold">Due soon</span>}
+      </button>
+      <button
+        onClick={() => onSave(null)}
+        className="text-muted-foreground hover:text-destructive transition-colors"
+        title="Clear due date"
+      >
+        <XCircle className="w-3 h-3" />
+      </button>
+    </div>
   );
 }

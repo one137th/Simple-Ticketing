@@ -7,7 +7,16 @@ import { cn } from "@/lib/utils";
 import type { Ticket } from "@/lib/types";
 import { STATUS_CONFIG, PRIORITY_CONFIG, TYPE_CONFIG } from "@/lib/types";
 import { formatDistanceToNow } from "@/lib/dateUtils";
-import { MessageSquare } from "lucide-react";
+import { MessageSquare, Calendar } from "lucide-react";
+
+function getDueState(dueAt?: string | null): "overdue" | "due-soon" | "ok" | null {
+  if (!dueAt) return null;
+  const due = new Date(dueAt).getTime();
+  const now = Date.now();
+  if (due < now) return "overdue";
+  if (due - now < 3 * 24 * 60 * 60 * 1000) return "due-soon";
+  return "ok";
+}
 
 interface Props {
   ticket: Ticket;
@@ -74,12 +83,28 @@ export default function TicketRow({ ticket, isSelected, isChecked, onCheck, onCl
 
       {/* Title */}
       <td className="px-2 py-2.5">
-        <span className={cn(
-          "text-sm font-medium text-foreground line-clamp-1",
-          ticket.status === "done" || ticket.status === "cancelled" ? "line-through text-muted-foreground" : ""
-        )}>
-          {ticket.title}
-        </span>
+        <div className="flex items-center gap-2 flex-wrap">
+          <span className={cn(
+            "text-sm font-medium text-foreground line-clamp-1",
+            ticket.status === "done" || ticket.status === "cancelled" ? "line-through text-muted-foreground" : ""
+          )}>
+            {ticket.title}
+          </span>
+          {(() => {
+            const dueState = getDueState(ticket.dueAt);
+            if (dueState === "overdue") return (
+              <span className="inline-flex items-center gap-0.5 px-1.5 py-0.5 rounded-full bg-red-100 text-red-700 text-[10px] font-bold flex-shrink-0">
+                <Calendar className="w-2.5 h-2.5" />Overdue
+              </span>
+            );
+            if (dueState === "due-soon") return (
+              <span className="inline-flex items-center gap-0.5 px-1.5 py-0.5 rounded-full bg-amber-100 text-amber-700 text-[10px] font-bold flex-shrink-0">
+                <Calendar className="w-2.5 h-2.5" />Due soon
+              </span>
+            );
+            return null;
+          })()}
+        </div>
         {ticket.labels.length > 0 && (
           <div className="flex gap-1 mt-0.5 flex-wrap">
             {ticket.labels.slice(0, 3).map((label) => (

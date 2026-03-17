@@ -15,6 +15,7 @@ export interface FilterState {
   priorities: TicketPriority[];
   types: TicketType[];
   assignees: string[];
+  overdue?: boolean;
 }
 
 export const EMPTY_FILTERS: FilterState = {
@@ -23,11 +24,13 @@ export const EMPTY_FILTERS: FilterState = {
   priorities: [],
   types: [],
   assignees: [],
+  overdue: false,
 };
 
 export function hasActiveFilters(f: FilterState) {
   return (
     f.query.trim() !== "" ||
+    !!f.overdue ||
     f.statuses.length > 0 ||
     f.priorities.length > 0 ||
     f.types.length > 0 ||
