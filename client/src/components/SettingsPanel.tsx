@@ -20,8 +20,9 @@ import { formatDateTime } from "@/lib/dateUtils";
 import { toast } from "sonner";
 import type { SyncConfig, GistSyncConfig, CloudflareSyncConfig } from "@/lib/remoteSync";
 import { CLOUDFLARE_WORKER_TEMPLATE } from "@/lib/remoteSync";
+import CloudStorageSettings from "./CloudStorageSettings";
 
-type Tab = "file" | "sync" | "projects" | "agent";
+type Tab = "file" | "sync" | "cloud" | "projects" | "agent";
 
 interface Props { onClose: () => void; initialTab?: Tab; }
 
@@ -86,6 +87,7 @@ export default function SettingsPanel({ onClose, initialTab }: Props) {
   const TABS: { id: Tab; label: string }[] = [
     { id: "file", label: "Data File" },
     { id: "sync", label: "Remote Sync" },
+    { id: "cloud", label: "Cloud Storage" },
     { id: "projects", label: "Projects" },
     { id: "agent", label: "AI Agents" },
   ];
@@ -266,6 +268,13 @@ export default function SettingsPanel({ onClose, initialTab }: Props) {
               {syncConfig.backend === "cloudflare_kv" && (
                 <KVConfig cfg={syncConfig} onSave={updateSyncConfig} copyToClipboard={copyToClipboard} copiedKey={copiedKey} />
               )}
+            </div>
+          )}
+
+          {/* ── CLOUD STORAGE TAB ─────────────────────────────────────────── */}
+          {tab === "cloud" && (
+            <div className="p-4">
+              <CloudStorageSettings />
             </div>
           )}
 

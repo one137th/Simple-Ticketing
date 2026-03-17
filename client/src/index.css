@@ -89,6 +89,49 @@
   --sidebar-ring:        oklch(0.28 0.08 250);
 }
 
+.dark {
+  /* Blueprint dark palette — deep slate bg, light text, navy accents */
+  --background:          oklch(0.13 0.015 250);      /* deep slate */
+  --foreground:          oklch(0.93 0.008 85);        /* warm off-white */
+  --card:                oklch(0.17 0.015 250);       /* slightly lighter slate */
+  --card-foreground:     oklch(0.93 0.008 85);
+  --popover:             oklch(0.17 0.015 250);
+  --popover-foreground:  oklch(0.93 0.008 85);
+
+  /* Primary: lighter navy/blue in dark mode */
+  --primary:             oklch(0.62 0.12 250);
+  --primary-foreground:  oklch(0.98 0 0);
+
+  /* Secondary */
+  --secondary:           oklch(0.22 0.015 250);
+  --secondary-foreground: oklch(0.85 0.008 85);
+
+  /* Muted */
+  --muted:               oklch(0.22 0.015 250);
+  --muted-foreground:    oklch(0.58 0.015 250);
+
+  /* Accent: amber stays warm */
+  --accent:              oklch(0.72 0.14 75);
+  --accent-foreground:   oklch(0.13 0.015 250);
+
+  --destructive:         oklch(0.65 0.22 27);
+  --destructive-foreground: oklch(0.98 0 0);
+
+  --border:              oklch(0.26 0.015 250);
+  --input:               oklch(0.26 0.015 250);
+  --ring:                oklch(0.62 0.12 250);
+
+  /* Sidebar */
+  --sidebar:             oklch(0.11 0.015 250);
+  --sidebar-foreground:  oklch(0.93 0.008 85);
+  --sidebar-primary:     oklch(0.62 0.12 250);
+  --sidebar-primary-foreground: oklch(0.98 0 0);
+  --sidebar-accent:      oklch(0.20 0.015 250);
+  --sidebar-accent-foreground: oklch(0.93 0.008 85);
+  --sidebar-border:      oklch(0.22 0.015 250);
+  --sidebar-ring:        oklch(0.62 0.12 250);
+}
+
 @layer base {
   * {
     @apply border-border outline-ring/50;

@@ -29,6 +29,7 @@ export interface Ticket {
   comments: Comment[];
   projectKey: string;
   dueAt?: string | null;  // ISO date string, optional
+  notes?: string;         // Markdown/plain text notes, optional
 }
 
 export interface Project {

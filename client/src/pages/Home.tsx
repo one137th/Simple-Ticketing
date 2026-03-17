@@ -19,9 +19,9 @@ export default function Home() {
   const [statusFilter, setStatusFilter] = useState<TicketStatus | null>(null);
   const [selectedTicketId, setSelectedTicketId] = useState<string | null>(null);
   const [showSettings, setShowSettings] = useState(false);
-  const [settingsInitialTab, setSettingsInitialTab] = useState<"file" | "sync" | "projects" | "agent">("file");
+  const [settingsInitialTab, setSettingsInitialTab] = useState<"file" | "sync" | "cloud" | "projects" | "agent">("file");
 
-  const openSettings = (tab: "file" | "sync" | "projects" | "agent" = "file") => {
+  const openSettings = (tab: "file" | "sync" | "cloud" | "projects" | "agent" = "file") => {
     setSettingsInitialTab(tab);
     setShowSettings(true);
   };

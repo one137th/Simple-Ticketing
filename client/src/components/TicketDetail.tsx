@@ -14,6 +14,7 @@ import { Textarea } from "@/components/ui/textarea";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { cn } from "@/lib/utils";
 import { formatDateTime, formatDistanceToNow } from "@/lib/dateUtils";
+import FileAttachments from "./FileAttachments";
 
 interface Props {
   ticketId: string;
@@ -32,6 +33,8 @@ export default function TicketDetail({ ticketId, onClose }: Props) {
   const [commentAuthor, setCommentAuthor] = useState("Me");
   const [labelInput, setLabelInput] = useState("");
   const [confirmDelete, setConfirmDelete] = useState(false);
+  const [editingNotes, setEditingNotes] = useState(false);
+  const [notesDraft, setNotesDraft] = useState("");
 
   useEffect(() => {
     if (ticket) {
@@ -275,6 +278,39 @@ export default function TicketDetail({ ticketId, onClose }: Props) {
             </div>
           )}
         </div>
+
+        {/* Notes */}
+        <div className="px-4 py-3 border-b border-border">
+          <p className="text-xs font-semibold text-muted-foreground uppercase tracking-wide mb-2">Notes</p>
+          {editingNotes ? (
+            <div className="space-y-2">
+              <Textarea
+                value={notesDraft}
+                onChange={(e) => setNotesDraft(e.target.value)}
+                rows={8}
+                placeholder="Add private notes, context, links, or anything useful…"
+                className="text-sm font-mono text-xs"
+                autoFocus
+              />
+              <div className="flex gap-2">
+                <Button size="sm" onClick={async () => { await updateTicket(ticket.id, { notes: notesDraft }); setEditingNotes(false); }} className="h-7 text-xs">Save</Button>
+                <Button size="sm" variant="outline" onClick={() => { setNotesDraft(ticket.notes ?? ""); setEditingNotes(false); }} className="h-7 text-xs">Cancel</Button>
+              </div>
+            </div>
+          ) : (
+            <div
+              className="group cursor-text min-h-[3rem] text-sm text-foreground/80 whitespace-pre-wrap hover:bg-secondary/40 rounded p-2 -mx-2 transition-colors font-mono text-xs"
+              onClick={() => { setNotesDraft(ticket.notes ?? ""); setEditingNotes(true); }}
+            >
+              {ticket.notes || (
+                <span className="text-muted-foreground/50 italic font-sans text-sm">Click to add notes…</span>
+              )}
+            </div>
+          )}
+        </div>
+
+        {/* File Attachments */}
+        <FileAttachments ticketId={ticketId} />
 
         {/* Comments */}
         <div className="px-4 py-3">

@@ -4,11 +4,12 @@
  */
 
 import { useState } from "react";
-import { Plus, Ticket, LayoutGrid, List, ChevronDown, ChevronRight, FolderOpen, Settings, Save, Bot } from "lucide-react";
+import { Plus, Ticket, LayoutGrid, List, ChevronDown, ChevronRight, FolderOpen, Settings, Save, Bot, Sun, Moon, Monitor } from "lucide-react";
 import { useApp } from "@/contexts/AppContext";
 import { STATUS_CONFIG } from "@/lib/types";
 import type { TicketStatus } from "@/lib/types";
 import { cn } from "@/lib/utils";
+import { useTheme } from "@/lib/useTheme";
 import NewProjectDialog from "./NewProjectDialog";
 
 interface SidebarProps {
@@ -25,6 +26,7 @@ export default function Sidebar({ view, onViewChange, statusFilter, onStatusFilt
   const [projectsOpen, setProjectsOpen] = useState(true);
   const [statusOpen, setStatusOpen] = useState(true);
   const [showNewProject, setShowNewProject] = useState(false);
+  const { resolvedTheme, toggleTheme } = useTheme();
 
   const projects = data?.projects ?? [];
   const tickets = data?.tickets ?? [];
@@ -203,7 +205,7 @@ export default function Sidebar({ view, onViewChange, statusFilter, onStatusFilt
         <div className="border-t border-sidebar-border px-3 py-3 space-y-0.5">
           <button
             onClick={onOpenAgentSetup}
-            className="w-full flex items-center gap-2 px-2 py-1.5 rounded-md text-xs text-purple-600 hover:bg-purple-50 hover:text-purple-700 transition-colors font-medium"
+            className="w-full flex items-center gap-2 px-2 py-1.5 rounded-md text-xs text-purple-600 dark:text-purple-400 hover:bg-purple-50 dark:hover:bg-purple-900/30 hover:text-purple-700 transition-colors font-medium"
           >
             <Bot className="w-3.5 h-3.5" />
             AI Agent Setup
@@ -214,6 +216,14 @@ export default function Sidebar({ view, onViewChange, statusFilter, onStatusFilt
           >
             <Settings className="w-3.5 h-3.5" />
             Settings & Export
+          </button>
+          <button
+            onClick={toggleTheme}
+            className="w-full flex items-center gap-2 px-2 py-1.5 rounded-md text-xs text-muted-foreground hover:bg-sidebar-accent hover:text-foreground transition-colors"
+            title={resolvedTheme === "dark" ? "Switch to light mode" : "Switch to dark mode"}
+          >
+            {resolvedTheme === "dark" ? <Sun className="w-3.5 h-3.5" /> : <Moon className="w-3.5 h-3.5" />}
+            {resolvedTheme === "dark" ? "Light mode" : "Dark mode"}
           </button>
         </div>
       </aside>
