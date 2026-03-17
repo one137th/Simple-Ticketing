@@ -91,6 +91,20 @@ export function saveToLocalStorage(data: AppData): void {
   localStorage.setItem(LOCALSTORAGE_KEY, JSON.stringify({ ...data, lastUpdated: new Date().toISOString() }));
 }
 
+/**
+ * Re-reads the current file handle and returns the latest data.
+ * Returns null if no file handle is open.
+ * Used by the Refresh button to detect external changes.
+ */
+export async function refreshFromFile(): Promise<AppData | null> {
+  if (!_fileHandle) return null;
+  try {
+    return await readFromFile(_fileHandle);
+  } catch {
+    return null;
+  }
+}
+
 // ─── Data Helpers ─────────────────────────────────────────────────────────────
 
 export function generateTicketId(projectKey: string, tickets: Ticket[]): string {

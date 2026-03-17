@@ -4,7 +4,7 @@
  */
 
 import { useState, useMemo, useCallback } from "react";
-import { Plus, SortAsc, SortDesc, ArrowUpDown } from "lucide-react";
+import { Plus, SortAsc, SortDesc, ArrowUpDown, RefreshCw } from "lucide-react";
 import { useApp } from "@/contexts/AppContext";
 import type { TicketStatus, TicketPriority } from "@/lib/types";
 import { STATUS_CONFIG } from "@/lib/types";
@@ -31,7 +31,7 @@ const STATUS_ORDER: Record<TicketStatus, number> = {
 };
 
 export default function TicketList({ statusFilter, onSelectTicket, selectedTicketId }: Props) {
-  const { data, selectedProjectKey } = useApp();
+  const { data, selectedProjectKey, refreshData, isRefreshing, stalenessInfo } = useApp();
   const [filters, setFilters] = useState<FilterState>(EMPTY_FILTERS);
   const [activePresetId, setActivePresetId] = useState<string | null>(null);
   const [sortKey, setSortKey] = useState<SortKey>("updatedAt");
@@ -212,6 +212,20 @@ export default function TicketList({ statusFilter, onSelectTicket, selectedTicke
               {tickets.length} ticket{tickets.length !== 1 ? "s" : ""}
             </span>
           </div>
+
+          {/* Refresh button */}
+          <button
+            onClick={() => refreshData()}
+            disabled={isRefreshing}
+            title="Refresh — re-reads the local file or cloud to detect external changes"
+            className={cn(
+              "h-8 w-8 flex items-center justify-center rounded-md border border-border hover:bg-secondary/60 transition-colors flex-shrink-0",
+              isRefreshing && "opacity-60 cursor-not-allowed",
+              stalenessInfo?.isStale && "border-amber-400 bg-amber-50 dark:bg-amber-950/30 text-amber-700 dark:text-amber-400"
+            )}
+          >
+            <RefreshCw className={cn("w-3.5 h-3.5", isRefreshing && "animate-spin")} />
+          </button>
 
           <Button size="sm" onClick={() => setShowNewTicket(true)} className="h-8 text-xs gap-1.5 flex-shrink-0">
             <Plus className="w-3.5 h-3.5" />

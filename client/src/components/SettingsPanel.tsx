@@ -21,6 +21,7 @@ import { toast } from "sonner";
 import type { SyncConfig, GistSyncConfig, CloudflareSyncConfig } from "@/lib/remoteSync";
 import { CLOUDFLARE_WORKER_TEMPLATE } from "@/lib/remoteSync";
 import CloudStorageSettings from "./CloudStorageSettings";
+import ImportExportPanel from "./ImportExportPanel";
 
 type Tab = "file" | "sync" | "cloud" | "projects" | "agent";
 
@@ -159,6 +160,11 @@ export default function SettingsPanel({ onClose, initialTab }: Props) {
                 <p className="text-xs text-muted-foreground mt-2">
                   Downloads all data as a JSON file — useful for backups or handing off to AI agents.
                 </p>
+              </div>
+
+              <div className="border-t border-border pt-4">
+                <h3 className="text-xs font-semibold text-muted-foreground uppercase tracking-wide mb-3">Import / Export (CSV &amp; Excel)</h3>
+                <ImportExportPanel />
               </div>
 
               <div className="border-t border-border pt-4">

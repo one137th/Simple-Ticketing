@@ -27,3 +27,12 @@
 - [x] Pull from cloud button on Welcome Screen (detects connected provider)
 - [x] pullFromCloud helper in cloudStorage lib (Google Drive, OneDrive, Dropbox)
 - [x] AppContext exposes pullFromCloud action for WelcomeScreen
+
+- [x] Refresh button in toolbar — re-reads local JSON file or pulls from cloud, shows staleness badge
+- [x] Staleness detection — compare in-memory lastUpdated vs file/cloud lastUpdated
+- [x] Export to CSV (all tickets for current project or all projects)
+- [x] Export to Excel (.xlsx) using SheetJS
+- [x] Import from CSV with column mapping and validation
+- [x] Import from Excel (.xlsx) with column mapping and validation
+- [x] Downloadable CSV/Excel import template with example rows and column docs
+- [x] Import/Export UI panel in Settings → Data File tab

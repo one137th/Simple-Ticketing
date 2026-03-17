@@ -18,7 +18,9 @@ import {
   addComment,
   hasFileHandle,
   getFileHandleName,
+  refreshFromFile,
 } from "@/lib/store";
+import { pullDataFromCloud, getActiveProvider } from "@/lib/cloudStorage";
 import { toast } from "sonner";
 
 interface AppContextValue {
@@ -57,6 +59,14 @@ interface AppContextValue {
   pullFromRemote: () => Promise<void>;
   isSyncing: boolean;
   lastSyncResult: string | null;
+
+  // Refresh
+  refreshData: () => Promise<{ status: "up_to_date" | "updated" | "stale"; message: string }>;
+  isRefreshing: boolean;
+  stalenessInfo: { isStale: boolean; externalLastUpdated: string | null } | null;
+
+  // Bulk data replacement (used by import)
+  updateData: (newData: AppData) => Promise<void>;
 }
 
 const AppContext = createContext<AppContextValue | null>(null);
@@ -71,6 +81,8 @@ export function AppProvider({ children }: { children: React.ReactNode }) {
   const [syncConfig, setSyncConfig] = useState<SyncConfig>(() => loadSyncConfig());
   const [isSyncing, setIsSyncing] = useState(false);
   const [lastSyncResult, setLastSyncResult] = useState<string | null>(null);
+  const [isRefreshing, setIsRefreshing] = useState(false);
+  const [stalenessInfo, setStalenessInfo] = useState<{ isStale: boolean; externalLastUpdated: string | null } | null>(null);
 
   // Persist & save helper (also auto-pushes to remote if configured)
   const persist = useCallback(async (newData: AppData) => {
@@ -257,6 +269,63 @@ export function AppProvider({ children }: { children: React.ReactNode }) {
     }
   }, [data?.projects.length]);
 
+  const refreshData = useCallback(async (): Promise<{ status: "up_to_date" | "updated" | "stale"; message: string }> => {
+    setIsRefreshing(true);
+    try {
+      let freshData: AppData | null = null;
+      let source = "";
+
+      // Strategy 1: re-read local file handle
+      if (hasFileHandle()) {
+        freshData = await refreshFromFile();
+        source = "local file";
+      }
+
+      // Strategy 2: pull from cloud if connected
+      if (!freshData) {
+        const cloudProvider = getActiveProvider();
+        if (cloudProvider) {
+          const json = await pullDataFromCloud();
+          if (json) {
+            freshData = JSON.parse(json) as AppData;
+            source = cloudProvider;
+          }
+        }
+      }
+
+      if (!freshData) {
+        setStalenessInfo(null);
+        return { status: "up_to_date", message: "No external source to check" };
+      }
+
+      const currentTs = data?.lastUpdated ? new Date(data.lastUpdated).getTime() : 0;
+      const freshTs = freshData.lastUpdated ? new Date(freshData.lastUpdated).getTime() : 0;
+
+      if (freshTs > currentTs) {
+        // External file is newer — ask user (set stale flag, load data)
+        setStalenessInfo({ isStale: true, externalLastUpdated: freshData.lastUpdated });
+        setData(freshData);
+        if (hasFileHandle()) saveData(freshData);
+        else saveToLocalStorage(freshData);
+        toast.success(`Data refreshed from ${source} — ${freshData.tickets.length} tickets loaded`);
+        return { status: "updated", message: `Updated from ${source}` };
+      } else if (freshTs < currentTs) {
+        setStalenessInfo({ isStale: false, externalLastUpdated: freshData.lastUpdated });
+        toast.info("Local data is newer than the file — no changes applied");
+        return { status: "stale", message: "Local data is ahead of the file" };
+      } else {
+        setStalenessInfo({ isStale: false, externalLastUpdated: freshData.lastUpdated });
+        toast.success("Data is already up to date");
+        return { status: "up_to_date", message: "Already up to date" };
+      }
+    } catch (err: any) {
+      toast.error("Refresh failed: " + (err?.message ?? "Unknown error"));
+      return { status: "up_to_date", message: "Refresh failed" };
+    } finally {
+      setIsRefreshing(false);
+    }
+  }, [data]);
+
   const updateSyncConfig = useCallback((cfg: SyncConfig) => {
     saveSyncConfig(cfg);
     setSyncConfig(cfg);
@@ -305,6 +374,10 @@ export function AppProvider({ children }: { children: React.ReactNode }) {
     }
   }, [syncConfig]);
 
+  const updateData = useCallback(async (newData: AppData) => {
+    await persist(newData);
+  }, [persist]);
+
   const value: AppContextValue = {
     data,
     isLoaded,
@@ -331,6 +404,10 @@ export function AppProvider({ children }: { children: React.ReactNode }) {
     pullFromRemote,
     isSyncing,
     lastSyncResult,
+    refreshData,
+    isRefreshing,
+    stalenessInfo,
+    updateData,
   };
 
   return <AppContext.Provider value={value}>{children}</AppContext.Provider>;
