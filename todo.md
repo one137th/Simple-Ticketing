@@ -4,3 +4,9 @@
 - [x] Active filter summary bar with individual clear buttons
 - [x] Clear-all filters button
 - [x] Filter state persists while switching between tickets
+
+- [x] Filter preset storage (localStorage, per project)
+- [x] Save current filters as a named preset
+- [x] One-click preset chips to restore a saved filter combination
+- [x] Delete individual presets
+- [x] Built-in presets: My Open Tickets, Bugs, High Priority

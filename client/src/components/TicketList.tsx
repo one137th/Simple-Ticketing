@@ -6,11 +6,13 @@
 import { useState, useMemo, useCallback } from "react";
 import { Plus, SortAsc, SortDesc, ArrowUpDown } from "lucide-react";
 import { useApp } from "@/contexts/AppContext";
-import type { Ticket, TicketStatus, TicketPriority } from "@/lib/types";
+import type { TicketStatus, TicketPriority } from "@/lib/types";
 import { STATUS_CONFIG } from "@/lib/types";
 import TicketRow from "./TicketRow";
 import BulkActionBar from "./BulkActionBar";
 import FilterBar, { FilterState, EMPTY_FILTERS, hasActiveFilters } from "./FilterBar";
+import PresetBar from "./PresetBar";
+import type { FilterPreset } from "@/lib/filterPresets";
 import { Button } from "@/components/ui/button";
 import { cn } from "@/lib/utils";
 import NewTicketDialog from "./NewTicketDialog";
@@ -31,6 +33,7 @@ const STATUS_ORDER: Record<TicketStatus, number> = {
 export default function TicketList({ statusFilter, onSelectTicket, selectedTicketId }: Props) {
   const { data, selectedProjectKey } = useApp();
   const [filters, setFilters] = useState<FilterState>(EMPTY_FILTERS);
+  const [activePresetId, setActivePresetId] = useState<string | null>(null);
   const [sortKey, setSortKey] = useState<SortKey>("updatedAt");
   const [sortDir, setSortDir] = useState<"asc" | "desc">("desc");
   const [showNewTicket, setShowNewTicket] = useState(false);
@@ -117,7 +120,18 @@ export default function TicketList({ statusFilter, onSelectTicket, selectedTicke
 
   const handleFiltersChange = useCallback((f: FilterState) => {
     setFilters(f);
+    setActivePresetId(null);
     setSelectedIds(new Set());
+  }, []);
+
+  const handleApplyPreset = useCallback((preset: FilterPreset) => {
+    setFilters(preset.filters);
+    setActivePresetId(preset.id);
+    setSelectedIds(new Set());
+  }, []);
+
+  const handleClearPreset = useCallback(() => {
+    setActivePresetId(null);
   }, []);
 
   // ── Bulk selection helpers ────────────────────────────────────────────────
@@ -205,6 +219,18 @@ export default function TicketList({ statusFilter, onSelectTicket, selectedTicke
           onChange={handleFiltersChange}
           availableAssignees={availableAssignees}
         />
+
+        {/* Preset bar */}
+        {selectedProjectKey && (
+          <PresetBar
+            projectKey={selectedProjectKey}
+            currentFilters={filters}
+            activePresetId={activePresetId}
+            onApplyPreset={handleApplyPreset}
+            onClearPreset={handleClearPreset}
+            availableAssignees={availableAssignees}
+          />
+        )}
 
         {/* Table */}
         <div className="flex-1 overflow-auto">
