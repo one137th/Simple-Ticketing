@@ -48,7 +48,7 @@ export default function WelcomeScreen() {
       </div>
 
       <p className="text-sm text-muted-foreground mb-8 text-center max-w-xs">
-        A Jira-like ticketing system that stores all data in a local JSON file on your machine.
+        A lightweight issue tracker that stores all data in a local JSON file on your machine.
       </p>
 
       {/* Main card */}
