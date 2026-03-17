@@ -566,3 +566,33 @@ export function getActiveProvider(): CloudProvider | null {
   }
   return null;
 }
+
+/**
+ * Unified pull: reads localticket-data.json from the first connected provider.
+ * Returns the raw JSON string, or null if no file exists yet.
+ * Throws if no provider is connected or the read fails.
+ */
+export async function pullDataFromCloud(): Promise<string | null> {
+  const provider = getActiveProvider();
+  if (!provider) throw new Error("No cloud provider connected");
+  const configs = getCloudConfigs();
+  const cfg = configs[provider];
+  if (!cfg) throw new Error("Provider config missing");
+  const folder = cfg.folderName ?? "LocalTicket";
+
+  if (provider === "google") return googleReadJson(cfg.clientId, folder);
+  if (provider === "onedrive") return onedriveReadJson(cfg.clientId, folder);
+  return dropboxReadJson(cfg.clientId, folder);
+}
+
+/** Returns a human-readable label for the active provider, or null */
+export function getActiveProviderLabel(): string | null {
+  const p = getActiveProvider();
+  if (!p) return null;
+  const labels: Record<CloudProvider, string> = {
+    google: "Google Drive",
+    onedrive: "OneDrive",
+    dropbox: "Dropbox",
+  };
+  return labels[p];
+}

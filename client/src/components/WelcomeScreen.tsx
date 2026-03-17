@@ -3,15 +3,27 @@
  * Design: Blueprint — centered card, navy + amber, DM Sans
  */
 
-import { FolderOpen, FilePlus, HardDrive, Ticket, Info, Sparkles } from "lucide-react";
+import { useState } from "react";
+import { FolderOpen, FilePlus, HardDrive, Ticket, Info, Sparkles, CloudDownload, Loader2 } from "lucide-react";
 import { useApp } from "@/contexts/AppContext";
+import {
+  getActiveProvider,
+  getActiveProviderLabel,
+  pullDataFromCloud,
+} from "@/lib/cloudStorage";
+import { toast } from "sonner";
+import type { AppData } from "@/lib/types";
 
 export default function WelcomeScreen() {
   const { handleOpenFile, handleCreateFile, handleUseLocalStorage } = useApp();
   const hasFSAA = "showOpenFilePicker" in window;
+  const [isPulling, setIsPulling] = useState(false);
+
+  // Detect if a cloud provider is already connected
+  const activeProvider = getActiveProvider();
+  const providerLabel = getActiveProviderLabel();
 
   const handleLoadSample = () => {
-    // Pre-populate localStorage with sample data before loading
     const sampleData = {
       version: "1.0.0",
       lastUpdated: new Date().toISOString(),
@@ -30,6 +42,27 @@ export default function WelcomeScreen() {
     };
     localStorage.setItem("localticket_data", JSON.stringify(sampleData));
     handleUseLocalStorage();
+  };
+
+  const handlePullFromCloud = async () => {
+    if (!activeProvider) return;
+    setIsPulling(true);
+    try {
+      const json = await pullDataFromCloud();
+      if (!json) {
+        toast.error(`No data file found in ${providerLabel}. Start fresh by creating a new file.`);
+        setIsPulling(false);
+        return;
+      }
+      const parsed: AppData = JSON.parse(json);
+      // Store in localStorage as the working copy, then load it
+      localStorage.setItem("localticket_data", json);
+      handleUseLocalStorage();
+      toast.success(`Data restored from ${providerLabel} — ${parsed.tickets?.length ?? 0} tickets loaded`);
+    } catch (err: any) {
+      toast.error("Pull failed: " + (err?.message ?? "Unknown error"));
+      setIsPulling(false);
+    }
   };
 
   return (
@@ -56,11 +89,53 @@ export default function WelcomeScreen() {
         <div className="px-6 pt-5 pb-4 border-b border-border bg-secondary/30">
           <h2 className="text-sm font-semibold text-foreground">Choose your data storage</h2>
           <p className="text-xs text-muted-foreground mt-0.5">
-            All tickets stored locally — no server, no cloud, no tracking.
+            All tickets stored locally — no server, no tracking.
           </p>
         </div>
 
         <div className="p-4 space-y-2">
+
+          {/* ── Pull from cloud (shown prominently when a provider is connected) ── */}
+          {activeProvider && (
+            <>
+              <div className="rounded-lg border-2 border-primary/30 bg-primary/5 overflow-hidden">
+                <button
+                  onClick={handlePullFromCloud}
+                  disabled={isPulling}
+                  className="group w-full flex items-start gap-3.5 p-3.5 hover:bg-primary/10 transition-all duration-150 text-left disabled:opacity-60 disabled:cursor-not-allowed"
+                >
+                  <div className="w-8 h-8 rounded-md flex items-center justify-center flex-shrink-0 bg-primary/15 group-hover:bg-primary/25 transition-colors">
+                    {isPulling
+                      ? <Loader2 className="w-4 h-4 text-primary animate-spin" />
+                      : <CloudDownload className="w-4 h-4 text-primary" />
+                    }
+                  </div>
+                  <div>
+                    <div className="font-semibold text-sm text-primary">
+                      {isPulling ? "Restoring from cloud…" : `Restore from ${providerLabel}`}
+                    </div>
+                    <div className="text-xs text-primary/70 mt-0.5">
+                      {isPulling
+                        ? "Downloading your data file…"
+                        : `Load your saved data from ${providerLabel} — recommended for returning users`
+                      }
+                    </div>
+                  </div>
+                </button>
+                <div className="px-4 pb-2 flex items-center gap-1.5">
+                  <span className="w-1.5 h-1.5 rounded-full bg-green-500 animate-pulse" />
+                  <span className="text-xs text-green-700 dark:text-green-400 font-medium">{providerLabel} connected</span>
+                </div>
+              </div>
+
+              <div className="flex items-center gap-3 py-0.5">
+                <div className="flex-1 h-px bg-border" />
+                <span className="text-xs text-muted-foreground">or start fresh</span>
+                <div className="flex-1 h-px bg-border" />
+              </div>
+            </>
+          )}
+
           {/* Open existing file */}
           <StorageOption
             icon={<FolderOpen className="w-4 h-4 text-primary" />}
@@ -74,7 +149,7 @@ export default function WelcomeScreen() {
           {/* Create new file */}
           <StorageOption
             icon={<FilePlus className="w-4 h-4 text-amber-700" />}
-            iconBg="bg-amber-50 group-hover:bg-amber-100"
+            iconBg="bg-amber-50 dark:bg-amber-950/30 group-hover:bg-amber-100 dark:group-hover:bg-amber-900/40"
             title="Create new file"
             description="Choose where to save a new .json data file on your computer"
             onClick={handleCreateFile}
@@ -91,7 +166,7 @@ export default function WelcomeScreen() {
           {/* localStorage */}
           <StorageOption
             icon={<HardDrive className="w-4 h-4 text-slate-500" />}
-            iconBg="bg-slate-100 group-hover:bg-slate-200"
+            iconBg="bg-slate-100 dark:bg-slate-800 group-hover:bg-slate-200 dark:group-hover:bg-slate-700"
             title="Use browser storage"
             description="Store in localStorage — no file needed, but data stays in this browser only"
             onClick={handleUseLocalStorage}
@@ -100,7 +175,7 @@ export default function WelcomeScreen() {
           {/* Try with sample data */}
           <StorageOption
             icon={<Sparkles className="w-4 h-4 text-purple-500" />}
-            iconBg="bg-purple-50 group-hover:bg-purple-100"
+            iconBg="bg-purple-50 dark:bg-purple-950/30 group-hover:bg-purple-100 dark:group-hover:bg-purple-900/40"
             title="Try with sample data"
             description="Load demo projects in browser storage to explore the interface"
             onClick={handleLoadSample}
@@ -108,7 +183,7 @@ export default function WelcomeScreen() {
         </div>
 
         {!hasFSAA && (
-          <div className="mx-4 mb-4 flex items-start gap-2 p-3 bg-amber-50 border border-amber-200 rounded-lg text-xs text-amber-800">
+          <div className="mx-4 mb-4 flex items-start gap-2 p-3 bg-amber-50 dark:bg-amber-950/30 border border-amber-200 dark:border-amber-800 rounded-lg text-xs text-amber-800 dark:text-amber-300">
             <Info className="w-3.5 h-3.5 mt-0.5 flex-shrink-0" />
             <span>
               File System Access API requires <strong>Chrome</strong> or <strong>Edge</strong>.
@@ -128,7 +203,7 @@ export default function WelcomeScreen() {
           "Sortable list view",
           "JSON file — AI-readable",
           "No auth required",
-          "Export / backup",
+          "Cloud sync optional",
         ].map((f) => (
           <div key={f} className="flex items-center gap-1.5">
             <span className="w-1 h-1 rounded-full bg-primary/40" />

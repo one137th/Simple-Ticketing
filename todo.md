@@ -23,3 +23,7 @@
 - [x] Dropbox adapter: OAuth PKCE, JSON sync, file attachments
 - [x] File attachment UI in ticket detail (upload, list, download, delete)
 - [x] Cloud storage settings UI with provider picker and connect/disconnect
+
+- [x] Pull from cloud button on Welcome Screen (detects connected provider)
+- [x] pullFromCloud helper in cloudStorage lib (Google Drive, OneDrive, Dropbox)
+- [x] AppContext exposes pullFromCloud action for WelcomeScreen
