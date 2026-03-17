@@ -1,17 +1,17 @@
 /**
- * TicketList — Main list view with sortable table + bulk selection
+ * TicketList — Main list view with sortable table, FilterBar, and bulk selection
  * Design: Blueprint — dense table, 1px separators, sticky header, bulk action bar
  */
 
 import { useState, useMemo, useCallback } from "react";
-import { Plus, Search, SortAsc, SortDesc, ArrowUpDown } from "lucide-react";
+import { Plus, SortAsc, SortDesc, ArrowUpDown } from "lucide-react";
 import { useApp } from "@/contexts/AppContext";
 import type { Ticket, TicketStatus, TicketPriority } from "@/lib/types";
-import { STATUS_CONFIG, PRIORITY_CONFIG } from "@/lib/types";
+import { STATUS_CONFIG } from "@/lib/types";
 import TicketRow from "./TicketRow";
 import BulkActionBar from "./BulkActionBar";
+import FilterBar, { FilterState, EMPTY_FILTERS, hasActiveFilters } from "./FilterBar";
 import { Button } from "@/components/ui/button";
-import { Input } from "@/components/ui/input";
 import { cn } from "@/lib/utils";
 import NewTicketDialog from "./NewTicketDialog";
 
@@ -30,7 +30,7 @@ const STATUS_ORDER: Record<TicketStatus, number> = {
 
 export default function TicketList({ statusFilter, onSelectTicket, selectedTicketId }: Props) {
   const { data, selectedProjectKey } = useApp();
-  const [search, setSearch] = useState("");
+  const [filters, setFilters] = useState<FilterState>(EMPTY_FILTERS);
   const [sortKey, setSortKey] = useState<SortKey>("updatedAt");
   const [sortDir, setSortDir] = useState<"asc" | "desc">("desc");
   const [showNewTicket, setShowNewTicket] = useState(false);
@@ -40,30 +40,62 @@ export default function TicketList({ statusFilter, onSelectTicket, selectedTicke
 
   const project = data?.projects.find((p) => p.key === selectedProjectKey);
 
+  // Derive unique assignees for the filter dropdown
+  const availableAssignees = useMemo(() => {
+    const all = (data?.tickets ?? [])
+      .filter((t) => t.projectKey === selectedProjectKey && t.assignee.trim() !== "")
+      .map((t) => t.assignee.trim());
+    return Array.from(new Set(all)).sort();
+  }, [data, selectedProjectKey]);
+
   const tickets = useMemo(() => {
     let list = (data?.tickets ?? []).filter((t) => t.projectKey === selectedProjectKey);
 
+    // Sidebar status filter (from sidebar click)
     if (statusFilter) {
       list = list.filter((t) => t.status === statusFilter);
     }
 
-    if (search.trim()) {
-      const q = search.toLowerCase();
+    // FilterBar: status chips
+    if (filters.statuses.length > 0) {
+      list = list.filter((t) => filters.statuses.includes(t.status));
+    }
+
+    // FilterBar: priority chips
+    if (filters.priorities.length > 0) {
+      list = list.filter((t) => filters.priorities.includes(t.priority));
+    }
+
+    // FilterBar: type chips
+    if (filters.types.length > 0) {
+      list = list.filter((t) => filters.types.includes(t.type));
+    }
+
+    // FilterBar: assignee chips
+    if (filters.assignees.length > 0) {
+      list = list.filter((t) => filters.assignees.includes(t.assignee));
+    }
+
+    // FilterBar: keyword search
+    if (filters.query.trim()) {
+      const q = filters.query.toLowerCase();
       list = list.filter(
         (t) =>
           t.title.toLowerCase().includes(q) ||
           t.id.toLowerCase().includes(q) ||
           t.description.toLowerCase().includes(q) ||
           t.assignee.toLowerCase().includes(q) ||
-          t.labels.some((l) => l.toLowerCase().includes(q))
+          t.reporter.toLowerCase().includes(q) ||
+          t.labels.some((l) => l.toLowerCase().includes(q)) ||
+          t.comments.some((c) => c.body.toLowerCase().includes(q))
       );
     }
 
     list = [...list].sort((a, b) => {
       let cmp = 0;
       switch (sortKey) {
-        case "id":    cmp = a.id.localeCompare(b.id); break;
-        case "title": cmp = a.title.localeCompare(b.title); break;
+        case "id":       cmp = a.id.localeCompare(b.id); break;
+        case "title":    cmp = a.title.localeCompare(b.title); break;
         case "status":   cmp = STATUS_ORDER[a.status] - STATUS_ORDER[b.status]; break;
         case "priority": cmp = PRIORITY_ORDER[a.priority] - PRIORITY_ORDER[b.priority]; break;
         case "updatedAt": cmp = new Date(a.updatedAt).getTime() - new Date(b.updatedAt).getTime(); break;
@@ -73,7 +105,7 @@ export default function TicketList({ statusFilter, onSelectTicket, selectedTicke
     });
 
     return list;
-  }, [data, selectedProjectKey, statusFilter, search, sortKey, sortDir]);
+  }, [data, selectedProjectKey, statusFilter, filters, sortKey, sortDir]);
 
   // Clear selection when project/filter changes
   useMemo(() => { setSelectedIds(new Set()); }, [selectedProjectKey, statusFilter]);
@@ -82,6 +114,11 @@ export default function TicketList({ statusFilter, onSelectTicket, selectedTicke
     if (sortKey === key) setSortDir((d) => (d === "asc" ? "desc" : "asc"));
     else { setSortKey(key); setSortDir("desc"); }
   };
+
+  const handleFiltersChange = useCallback((f: FilterState) => {
+    setFilters(f);
+    setSelectedIds(new Set());
+  }, []);
 
   // ── Bulk selection helpers ────────────────────────────────────────────────
 
@@ -97,24 +134,18 @@ export default function TicketList({ statusFilter, onSelectTicket, selectedTicke
 
   const allVisibleSelected =
     tickets.length > 0 && tickets.every((t) => selectedIds.has(t.id));
-
   const someSelected = selectedIds.size > 0 && !allVisibleSelected;
 
   const toggleSelectAll = useCallback(() => {
-    if (allVisibleSelected) {
-      setSelectedIds(new Set());
-    } else {
-      setSelectedIds(new Set(tickets.map((t) => t.id)));
-    }
+    if (allVisibleSelected) setSelectedIds(new Set());
+    else setSelectedIds(new Set(tickets.map((t) => t.id)));
   }, [allVisibleSelected, tickets]);
 
   const selectAll = useCallback(() => {
     setSelectedIds(new Set(tickets.map((t) => t.id)));
   }, [tickets]);
 
-  const clearSelection = useCallback(() => {
-    setSelectedIds(new Set());
-  }, []);
+  const clearSelection = useCallback(() => setSelectedIds(new Set()), []);
 
   const SortIcon = ({ k }: { k: SortKey }) => {
     if (sortKey !== k) return <ArrowUpDown className="w-3 h-3 opacity-30" />;
@@ -131,10 +162,12 @@ export default function TicketList({ statusFilter, onSelectTicket, selectedTicke
     );
   }
 
+  const isFiltered = hasActiveFilters(filters) || !!statusFilter;
+
   return (
     <>
       <div className="flex-1 flex flex-col overflow-hidden relative">
-        {/* Toolbar */}
+        {/* Toolbar header */}
         <div className="flex items-center gap-3 px-4 py-3 border-b border-border bg-background sticky top-0 z-10">
           <div className="flex items-center gap-2 flex-1 min-w-0">
             {project && (
@@ -160,33 +193,35 @@ export default function TicketList({ statusFilter, onSelectTicket, selectedTicke
             </span>
           </div>
 
-          <div className="relative w-52 flex-shrink-0">
-            <Search className="absolute left-2.5 top-1/2 -translate-y-1/2 w-3.5 h-3.5 text-muted-foreground" />
-            <Input
-              placeholder="Search tickets…"
-              value={search}
-              onChange={(e) => { setSearch(e.target.value); clearSelection(); }}
-              className="pl-8 h-8 text-xs"
-            />
-          </div>
-
           <Button size="sm" onClick={() => setShowNewTicket(true)} className="h-8 text-xs gap-1.5 flex-shrink-0">
             <Plus className="w-3.5 h-3.5" />
             New Ticket
           </Button>
         </div>
 
+        {/* Filter bar */}
+        <FilterBar
+          filters={filters}
+          onChange={handleFiltersChange}
+          availableAssignees={availableAssignees}
+        />
+
         {/* Table */}
         <div className="flex-1 overflow-auto">
           {tickets.length === 0 ? (
             <div className="flex flex-col items-center justify-center h-48 text-muted-foreground gap-3">
               <p className="text-sm">
-                {search ? "No tickets match your search" : "No tickets yet"}
+                {isFiltered ? "No tickets match your filters" : "No tickets yet"}
               </p>
-              {!search && (
+              {!isFiltered && (
                 <Button variant="outline" size="sm" onClick={() => setShowNewTicket(true)} className="text-xs gap-1.5">
                   <Plus className="w-3.5 h-3.5" />
                   Create first ticket
+                </Button>
+              )}
+              {isFiltered && (
+                <Button variant="outline" size="sm" onClick={() => setFilters(EMPTY_FILTERS)} className="text-xs">
+                  Clear filters
                 </Button>
               )}
             </div>
@@ -266,7 +301,6 @@ export default function TicketList({ statusFilter, onSelectTicket, selectedTicke
                     isChecked={selectedIds.has(ticket.id)}
                     onCheck={(e) => toggleSelect(ticket.id, e)}
                     onClick={() => {
-                      // If in bulk-select mode, clicking a row toggles it
                       if (selectedIds.size > 0) {
                         setSelectedIds((prev) => {
                           const next = new Set(prev);
